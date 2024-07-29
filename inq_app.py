@@ -101,7 +101,7 @@ if user_info_submit:
 if "messages" in st.session_state:
     for message in st.session_state["messages"]:
         if message["role"] == "user":
-            st.markdown(f'<div style="font-weight:bold; text-align:right; margin-bottom: 10px;">You: {message["content"].replace("\n", "<br>")}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div style="color:blue; margin-bottom: 10px;">과학탐구 도우미: {message["content"].replace("\\n", "<br>")}</div>', unsafe_allow_html=True)
         elif message["role"] == "assistant":
             st.markdown(f'<div style="color:blue; margin-bottom: 10px;">과학탐구 도우미: {message["content"].replace("\n", "<br>")}</div>', unsafe_allow_html=True)
 

@@ -3,7 +3,7 @@ from openai import OpenAI
 import os
 import json
 from dotenv import load_dotenv
-import mysql.connector
+import pymysql
 
 load_dotenv()  # .env 파일 로드
 
@@ -12,21 +12,22 @@ MODEL = 'gpt-4o'
 TEMPERATURE = 0.0
 
 # OpenAI API 설정
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # OpenAI 평가 프롬프트 설정
 evaluation_prompt = (
-    "다음은 인공지능을 이용해 사람과 면담한 기록이야. "
-    "질문에 대한 응답 내용을 토대로 면담자가 과학자로서 자질이 있는지 호기심, 문제 해결 능력, 협업 능력, 비판적 사고, 의사소통 능력 5가지에 대해 평가하고 앞으로 발전할 수 있도록 피드백을 제공해. "
+    "다음은 '조금도 움직이지 않는 아주 잔잔한 액체에서 입자의 움직임은 어떨까?'라는 탐구 주제에 대해 중학생이 나눈 대화야."
+    "이 학생의 탐구 능력에 대해 간단하게 평가하고 피드백을 제공해."
 )
 
 # MySQL에서 데이터 불러오기 함수
 def fetch_records():
-    db = mysql.connector.connect(
+    db = pymysql.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
-        passwd=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_DATABASE")
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_DATABASE"),
+        charset='utf8mb4'  # 문자 집합 설정
     )
     cursor = db.cursor()
     cursor.execute("SELECT id, number, name, time FROM qna")
@@ -37,11 +38,12 @@ def fetch_records():
 
 # MySQL에서 특정 레코드 불러오기 함수
 def fetch_record_by_id(record_id):
-    db = mysql.connector.connect(
+    db = pymysql.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
-        passwd=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_DATABASE")
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_DATABASE"),
+        charset='utf8mb4'  # 문자 집합 설정
     )
     cursor = db.cursor()
     cursor.execute("SELECT chat FROM qna WHERE id = %s", (record_id,))
@@ -90,7 +92,7 @@ if password == os.getenv('PASSWORD'):  # 환경 변수에 저장된 비밀번호
             if message["role"] == "user":
                 st.write(f"**You:** {message['content']}")
             elif message["role"] == "assistant":
-                st.write(f"**ChatGPT:** {message['content']}")
+                st.write(f"**과학탐구 도우미:** {message['content']}")
 
     # 평가 버튼
     if st.button("평가하기"):

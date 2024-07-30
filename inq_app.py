@@ -1,18 +1,19 @@
+import pymysql
 import streamlit as st
 from openai import OpenAI
 import os
 import json
 from dotenv import load_dotenv
-import mysql.connector
 from datetime import datetime
 
-load_dotenv()  # .env 파일 로드
+# 환경 변수 로드
+load_dotenv()
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 MODEL = 'gpt-4o'
 
 # OpenAI API 키 설정
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # 초기 프롬프트 설정
 initial_prompt = (
@@ -20,6 +21,7 @@ initial_prompt = (
     "먼저 '반가워요. 액체를 이루는 입자에 관한 탐구에서 궁금한 점을 질문해주세요.' 하고 시작해."
     "이 탐구는 중학교 1학년 학생들이 하는 탐구이므로, 중학교 1학년 수준에 맞게 설명해야 돼."
     "탐구의 주제는 '조금도 움직이지 않는 아주 잔잔한 액체에서 입자의 움직임은 어떨까?'야."
+    "따라서 탐구에서 변화시키는 변인은 '액체가 잔잔한 정도'야. 즉 실험은 잔잔한 액체와 그렇지 않은 액체를 비교하는 형태여야 해."
     "학생이 잔잔한 액체에서 입자가 움직이는지를 물어볼 경우, (즉 탐구의 결론을 물어볼 경우) 직접 탐구를 수행해서 알아보라고 대답해."
     "학생이 실험 아이디어를 제시하면, 실험 과정을 명료화, 구체화할 수 있도록 대화를 통해 지원해줘."
     "다만 '돋보기나 현미경으로 액체 입자를 관찰한다'라는 실험 아이디어를 제시하면 이것이 과학적으로 불가능하다고 설명해줘."
@@ -30,7 +32,6 @@ initial_prompt = (
     "학생이 실험의 결론에 대해 질문한다면, 결론이 과학적 오류 없이 가설과 실험 결과를 종합한 것인지 확인해. 학생의 가설을 모른다면 학생에게 질문해."
     "과학 개념을 설명할 때는 14세 정도의 학생 수준으로 간결하게 설명해."
     "가능하면 대화가 계속 이어지며 학생이 깊이 있는 이해를 할 수 있도록 응답해줘."
-    "마크다운 언어는 적용되지 않으므로 사용하지 마.(예: **굵게**)"
 )
 
 # 챗봇 응답 함수
@@ -58,10 +59,10 @@ def save_to_db():
         st.error("사용자 학번과 이름을 입력해야 합니다.")
         return
     
-    db = mysql.connector.connect(
+    db = pymysql.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
-        passwd=os.getenv("DB_PASSWORD"),
+        password=os.getenv("DB_PASSWORD"),
         database=os.getenv("DB_DATABASE")
     )
     cursor = db.cursor()
@@ -101,11 +102,9 @@ if user_info_submit:
 if "messages" in st.session_state:
     for message in st.session_state["messages"]:
         if message["role"] == "user":
-            content = message["content"].replace("\n", "<br>")
-            st.markdown(f'<div style="font-weight:bold; text-align:right; margin-bottom: 10px;">You: {content}</div>', unsafe_allow_html=True)
+            st.write(f"**You:** {message['content']}")
         elif message["role"] == "assistant":
-            content = message["content"].replace("\n", "<br>")
-            st.markdown(f'<div style="color:blue; margin-bottom: 10px;">과학탐구 도우미: {content}</div>', unsafe_allow_html=True)
+            st.write(f"**과학탐구 도우미:** {message['content']}")
 
 # 폼을 사용하여 입력 필드와 버튼 그룹화
 if "user_name" in st.session_state and "user_number" in st.session_state:

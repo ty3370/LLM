@@ -20,7 +20,17 @@ def fetch_records():
         charset='utf8mb4'  # 문자 집합 설정
     )
     cursor = db.cursor()
-    cursor.execute("SELECT id, number, name, time FROM qna")
+    
+    # SQL 쿼리에서 number 범위에 따른 정렬
+    query = """
+    SELECT id, number, name, time 
+    FROM qna
+    ORDER BY
+      CASE WHEN number >= 10300 AND number < 10400 THEN 0 ELSE 1 END,
+      number
+    """
+    
+    cursor.execute(query)
     records = cursor.fetchall()
     cursor.close()
     db.close()
@@ -43,7 +53,7 @@ def fetch_record_by_id(record_id):
     return record
 
 # Streamlit 애플리케이션
-st.title("면담 기록 보기")
+st.title("학생의 인공지능 사용 내역(교사용)")
 
 # 비밀번호 입력
 password = st.text_input("비밀번호를 입력하세요", type="password")
@@ -54,7 +64,7 @@ if password == os.getenv('PASSWORD'):  # 환경 변수에 저장된 비밀번호
 
     # 레코드 선택
     record_options = [f"{record[1]} ({record[2]}) - {record[3]}" for record in records]
-    selected_record = st.selectbox("면담 기록을 선택하세요:", record_options)
+    selected_record = st.selectbox("내역을 선택하세요:", record_options)
 
     # 선택된 레코드 ID 추출
     selected_record_id = records[record_options.index(selected_record)][0]

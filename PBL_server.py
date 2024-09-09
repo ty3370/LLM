@@ -91,7 +91,7 @@ def save_to_db():
     db.commit()
     cursor.close()
     db.close()
-    st.success("대화 내용이 저장되었습니다.")
+    st.success("사용해주셔서 감사합니다.")
 
 # Streamlit 애플리케이션
 st.title("보라중학교 과학탐구 도우미 챗봇")

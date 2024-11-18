@@ -17,7 +17,6 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # 초기 프롬프트
 initial_prompt = (
     "너는 중학생의 탐구를 돕는 챗봇이야. 이름은 '과학탐구 도우미'야."
-    "먼저 '반가워요. 액체를 이루는 입자에 관한 탐구에서 궁금한 점을 질문해주세요.' 하고 시작해."
     "이 탐구는 중학교 1학년 학생들이 하는 탐구이므로, 중학교 1학년 수준에 맞게 설명해야 돼."
     "탐구의 주제는 '조금도 움직이지 않는 아주 잔잔한 액체에서 입자의 움직임은 어떨까?'야."
     "따라서 탐구에서 변화시키는 변인은 '액체가 잔잔한 정도'야. 즉 실험은 잔잔한 액체와 그렇지 않은 액체를 비교하는 형태여야 해."
@@ -34,43 +33,56 @@ initial_prompt = (
 )
 
 # MySQL 저장 함수
-def save_to_db(name, number, chat):
-    db = pymysql.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_DATABASE")
-    )
-    cursor = db.cursor()
-    now = datetime.now()
+def save_to_db():
+    number = st.session_state.get('user_number', '').strip()
+    name = st.session_state.get('user_name', '').strip()
 
-    sql = """
-    INSERT INTO qna (number, name, chat, time)
-    VALUES (%s, %s, %s, %s)
-    """
-    val = (number, name, json.dumps(chat), now)
-    cursor.execute(sql, val)
-    db.commit()
-    cursor.close()
-    db.close()
+    if name == '' or number == '':
+        st.error("사용자 학번과 이름을 입력해야 합니다.")
+        return
+    
+    try:
+        db = pymysql.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_DATABASE")
+        )
+        cursor = db.cursor()
+        now = datetime.now()
 
-# GPT-4o 응답 생성 함수
+        sql = """
+        INSERT INTO qna (number, name, chat, time)
+        VALUES (%s, %s, %s, %s)
+        """
+        chat = json.dumps(st.session_state["messages"])  # 대화 내용을 JSON 문자열로 변환
+        val = (number, name, chat, now)
+        cursor.execute(sql, val)
+        db.commit()
+        cursor.close()
+        db.close()
+        st.success("대화 내용이 저장되었습니다.")
+    except Exception as e:
+        st.error(f"저장 중 오류가 발생했습니다: {e}")
+
+# GPT 응답 생성 함수
 def get_chatgpt_response(prompt):
-    st.session_state["messages"].append({"role": "user", "content": prompt})
     response = client.chat.completions.create(
         model=MODEL,
-        messages=st.session_state["messages"],
+        messages=[{"role": "system", "content": initial_prompt}] + st.session_state["messages"] + [{"role": "user", "content": prompt}],
     )
     answer = response.choices[0].message.content
+
+    # 사용자와 챗봇 대화만 기록
+    st.session_state["messages"].append({"role": "user", "content": prompt})
     st.session_state["messages"].append({"role": "assistant", "content": answer})
     return answer
 
-# 페이지 로직
+# 페이지 1: 학번 및 이름 입력
 def page_1():
     st.title("보라중학교 과학탐구 도우미 챗봇")
     st.write("학번과 이름을 입력한 뒤 '다음' 버튼을 눌러주세요.")
 
-    # 학번과 이름 입력
     user_number = st.text_input("학번", key="user_number")
     user_name = st.text_input("이름", key="user_name")
     if st.button("다음"):
@@ -80,45 +92,54 @@ def page_1():
             st.session_state["step"] = 2
             st.rerun()
 
+# 페이지 2: GPT와 대화
+# 페이지 2: GPT와 대화
 def page_2():
     st.title("탐구 설계 대화")
-    st.write("GPT-4o와 대화를 나누며 탐구를 설계하세요.")
+    st.write("과학탐구 도우미와 대화를 나누며 탐구를 설계하세요.")
 
-    # 초기 메시지 설정
+    # 대화 기록 초기화
     if "messages" not in st.session_state:
-        st.session_state["messages"] = [{"role": "system", "content": initial_prompt}]
-    if "user_input" not in st.session_state:
-        st.session_state["user_input"] = ""
+        st.session_state["messages"] = []
+
+    if "user_input_temp" not in st.session_state:
+        st.session_state["user_input_temp"] = ""
 
     # 대화 UI
-    user_input = st.text_area("You: ", key="user_input")  # 세션 상태와 동기화
-    if st.button("전송") and user_input:
-        answer = get_chatgpt_response(user_input)
-        st.write(f"**과학탐구 도우미:** {answer}")
-        st.session_state["user_input"] = ""  # 입력 필드 초기화
+    user_input = st.text_area(
+        "You: ",
+        value=st.session_state["user_input_temp"],
+        key="user_input",
+        on_change=lambda: st.session_state.update({"user_input_temp": st.session_state["user_input"]}),
+    )
 
-    # 대화 기록 표시
+    if st.button("전송") and user_input.strip():
+        get_chatgpt_response(user_input)
+        st.session_state["user_input_temp"] = ""
+        st.rerun()
+
+    # 사용자와 챗봇 대화 출력
     for message in st.session_state["messages"]:
         if message["role"] == "user":
             st.write(f"**You:** {message['content']}")
         elif message["role"] == "assistant":
             st.write(f"**과학탐구 도우미:** {message['content']}")
 
-    # 다음 버튼
+    # 다음 버튼: 저장 후 페이지 전환
     if st.button("다음"):
-        save_to_db(
-            st.session_state.get("user_name", ""),
-            st.session_state.get("user_number", ""),
-            st.session_state["messages"],
-        )
-        st.session_state["step"] = 3
-        st.rerun()
+        try:
+            save_to_db()  # MySQL에 저장
+            st.session_state["step"] = 3  # 저장 성공 시 단계 업데이트
+        except Exception as e:
+            st.error(f"대화 내용을 저장하는 데 실패했습니다: {e}")
+        else:
+            st.rerun()  # 저장이 성공한 경우에만 rerun 호출
 
+# 페이지 3: 실험 과정 출력
 def page_3():
     st.title("실험 과정")
-    st.write("아래는 GPT-4o와의 대화를 바탕으로 도출된 실험 과정입니다.")
+    st.write("실험 과정을 정리 중입니다. 잠시만 기다려주세요.")
 
-    # 실험 과정 생성
     if "experiment_plan" not in st.session_state:
         chat_history = "\n".join(
             f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"]
@@ -133,7 +154,6 @@ def page_3():
     
     st.write(st.session_state["experiment_plan"])
 
-    # 처음으로 돌아가는 버튼
     if st.button("처음부터"):
         st.session_state.clear()
         st.session_state["step"] = 1

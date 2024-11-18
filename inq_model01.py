@@ -37,16 +37,18 @@ def save_to_db():
     number = st.session_state.get('user_number', '').strip()
     name = st.session_state.get('user_name', '').strip()
 
-    if name == '' or number == '':
+    if not number or not name:  # 학번과 이름 확인
         st.error("사용자 학번과 이름을 입력해야 합니다.")
-        return
-    
+        return False  # 저장 실패
+
     try:
         db = pymysql.connect(
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_DATABASE")
+            database=os.getenv("DB_DATABASE"),
+            charset="utf8mb4",  # UTF-8 지원
+            autocommit=True  # 자동 커밋 활성화
         )
         cursor = db.cursor()
         now = datetime.now()
@@ -55,15 +57,21 @@ def save_to_db():
         INSERT INTO qna (number, name, chat, time)
         VALUES (%s, %s, %s, %s)
         """
-        chat = json.dumps(st.session_state["messages"])  # 대화 내용을 JSON 문자열로 변환
+        chat = json.dumps(st.session_state["messages"], ensure_ascii=False)  # 대화 내용을 JSON 문자열로 변환
         val = (number, name, chat, now)
+
+        # SQL 실행
         cursor.execute(sql, val)
-        db.commit()
         cursor.close()
         db.close()
-        st.success("대화 내용이 저장되었습니다.")
+        st.success("대화 내용 처리 중입니다.")
+        return True  # 저장 성공
+    except pymysql.MySQLError as db_err:
+        st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
+        return False  # 저장 실패
     except Exception as e:
-        st.error(f"저장 중 오류가 발생했습니다: {e}")
+        st.error(f"알 수 없는 오류가 발생했습니다: {e}")
+        return False  # 저장 실패
 
 # GPT 응답 생성 함수
 def get_chatgpt_response(prompt):
@@ -83,20 +91,31 @@ def page_1():
     st.title("보라중학교 과학탐구 도우미 챗봇")
     st.write("학번과 이름을 입력한 뒤 '다음' 버튼을 눌러주세요.")
 
-    user_number = st.text_input("학번", key="user_number")
-    user_name = st.text_input("이름", key="user_name")
+    if "user_number" not in st.session_state:
+        st.session_state["user_number"] = ""
+    if "user_name" not in st.session_state:
+        st.session_state["user_name"] = ""
+
+    st.session_state["user_number"] = st.text_input("학번", value=st.session_state["user_number"])
+    st.session_state["user_name"] = st.text_input("이름", value=st.session_state["user_name"])
+
     if st.button("다음"):
-        if user_number.strip() == "" or user_name.strip() == "":
+        if st.session_state["user_number"].strip() == "" or st.session_state["user_name"].strip() == "":
             st.error("학번과 이름을 모두 입력해주세요.")
         else:
             st.session_state["step"] = 2
             st.rerun()
 
 # 페이지 2: GPT와 대화
-# 페이지 2: GPT와 대화
 def page_2():
     st.title("탐구 설계 대화")
     st.write("과학탐구 도우미와 대화를 나누며 탐구를 설계하세요.")
+
+    # 학번과 이름 확인
+    if not st.session_state.get("user_number") or not st.session_state.get("user_name"):
+        st.error("학번과 이름이 누락되었습니다. 다시 입력해주세요.")
+        st.session_state["step"] = 1
+        st.rerun()
 
     # 대화 기록 초기화
     if "messages" not in st.session_state:
@@ -125,15 +144,11 @@ def page_2():
         elif message["role"] == "assistant":
             st.write(f"**과학탐구 도우미:** {message['content']}")
 
-    # 다음 버튼: 저장 후 페이지 전환
+    # 다음 버튼: 저장 성공 여부에 따라 페이지 전환
     if st.button("다음"):
-        try:
-            save_to_db()  # MySQL에 저장
-            st.session_state["step"] = 3  # 저장 성공 시 단계 업데이트
-        except Exception as e:
-            st.error(f"대화 내용을 저장하는 데 실패했습니다: {e}")
-        else:
-            st.rerun()  # 저장이 성공한 경우에만 rerun 호출
+        if save_to_db():  # 저장 성공 시만 페이지 전환
+            st.session_state["step"] = 3
+            st.rerun()
 
 # 페이지 3: 실험 과정 출력
 def page_3():

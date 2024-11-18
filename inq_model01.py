@@ -78,7 +78,7 @@ def page_1():
             st.error("학번과 이름을 모두 입력해주세요.")
         else:
             st.session_state["step"] = 2
-            st.experimental_rerun()
+            st.rerun()
 
 def page_2():
     st.title("탐구 설계 대화")
@@ -87,9 +87,11 @@ def page_2():
     # 초기 메시지 설정
     if "messages" not in st.session_state:
         st.session_state["messages"] = [{"role": "system", "content": initial_prompt}]
-    
+    if "user_input" not in st.session_state:
+        st.session_state["user_input"] = ""
+
     # 대화 UI
-    user_input = st.text_area("You: ", key="user_input")
+    user_input = st.text_area("You: ", key="user_input")  # 세션 상태와 동기화
     if st.button("전송") and user_input:
         answer = get_chatgpt_response(user_input)
         st.write(f"**과학탐구 도우미:** {answer}")
@@ -110,7 +112,7 @@ def page_2():
             st.session_state["messages"],
         )
         st.session_state["step"] = 3
-        st.experimental_rerun()
+        st.rerun()
 
 def page_3():
     st.title("실험 과정")
@@ -135,7 +137,7 @@ def page_3():
     if st.button("처음부터"):
         st.session_state.clear()
         st.session_state["step"] = 1
-        st.experimental_rerun()
+        st.rerun()
 
 # 메인 로직
 if "step" not in st.session_state:

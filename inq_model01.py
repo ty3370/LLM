@@ -169,11 +169,6 @@ def page_3():
     
     st.write(st.session_state["experiment_plan"])
 
-    if st.button("처음부터"):
-        st.session_state.clear()
-        st.session_state["step"] = 1
-        st.rerun()
-
 # 메인 로직
 if "step" not in st.session_state:
     st.session_state["step"] = 1

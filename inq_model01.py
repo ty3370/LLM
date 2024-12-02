@@ -133,16 +133,25 @@ def page_2():
     )
 
     if st.button("전송") and user_input.strip():
-        get_chatgpt_response(user_input)
+        answer = get_chatgpt_response(user_input)
+        st.session_state["recent_message"] = {"user": user_input, "assistant": answer}  # 최근 대화 저장
         st.session_state["user_input_temp"] = ""
         st.rerun()
 
-    # 사용자와 챗봇 대화 출력
-    for message in st.session_state["messages"]:
-        if message["role"] == "user":
-            st.write(f"**You:** {message['content']}")
-        elif message["role"] == "assistant":
-            st.write(f"**과학탐구 도우미:** {message['content']}")
+    # 최근 대화 출력
+    if "recent_message" in st.session_state:
+        st.subheader("[최근 대화]")
+        st.write(f"**You:** {st.session_state['recent_message']['user']}")
+        st.write(f"**과학탐구 도우미:** {st.session_state['recent_message']['assistant']}")
+
+    # 누적 대화 목록 출력
+    if "messages" in st.session_state:
+        st.subheader("[누적 대화 목록]")
+        for message in st.session_state["messages"]:
+            if message["role"] == "user":
+                st.write(f"**You:** {message['content']}")
+            elif message["role"] == "assistant":
+                st.write(f"**과학탐구 도우미:** {message['content']}")
 
     # 다음 버튼: 저장 성공 여부에 따라 페이지 전환
     if st.button("다음"):

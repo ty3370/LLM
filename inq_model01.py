@@ -154,6 +154,12 @@ def page_2():
     else:
         st.write("아직 최근 대화가 없습니다.")
 
+    # 다음 버튼
+    if st.button("다음"):
+        if save_to_db():  # 저장 성공 시만 페이지 전환
+            st.session_state["step"] = 3
+            st.rerun()
+
     # 누적 대화 출력
     st.subheader("📜 누적 대화 목록")
     if st.session_state["messages"]:
@@ -164,12 +170,6 @@ def page_2():
                 st.write(f"**과학탐구 도우미:** {message['content']}")
     else:
         st.write("아직 대화 기록이 없습니다.")
-
-    # 다음 버튼
-    if st.button("다음"):
-        if save_to_db():  # 저장 성공 시만 페이지 전환
-            st.session_state["step"] = 3
-            st.rerun()
 
 # 페이지 3: 실험 과정 출력
 def page_3():

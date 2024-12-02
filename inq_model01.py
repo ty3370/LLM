@@ -124,6 +124,9 @@ def page_2():
     if "user_input_temp" not in st.session_state:
         st.session_state["user_input_temp"] = ""
 
+    if "recent_message" not in st.session_state:
+        st.session_state["recent_message"] = {"user": "", "assistant": ""}
+
     # 대화 UI
     user_input = st.text_area(
         "You: ",
@@ -133,27 +136,36 @@ def page_2():
     )
 
     if st.button("전송") and user_input.strip():
-        answer = get_chatgpt_response(user_input)
-        st.session_state["recent_message"] = {"user": user_input, "assistant": answer}  # 최근 대화 저장
+        # GPT 응답 가져오기
+        assistant_response = get_chatgpt_response(user_input)
+
+        # 최근 대화 저장
+        st.session_state["recent_message"] = {"user": user_input, "assistant": assistant_response}
+
+        # 사용자 입력을 초기화하고 페이지를 새로고침
         st.session_state["user_input_temp"] = ""
         st.rerun()
 
     # 최근 대화 출력
-    if "recent_message" in st.session_state:
-        st.subheader("[최근 대화]")
+    st.subheader("📌 최근 대화")
+    if st.session_state["recent_message"]["user"] or st.session_state["recent_message"]["assistant"]:
         st.write(f"**You:** {st.session_state['recent_message']['user']}")
         st.write(f"**과학탐구 도우미:** {st.session_state['recent_message']['assistant']}")
+    else:
+        st.write("아직 최근 대화가 없습니다.")
 
-    # 누적 대화 목록 출력
-    if "messages" in st.session_state:
-        st.subheader("[누적 대화 목록]")
+    # 누적 대화 출력
+    st.subheader("📜 누적 대화 목록")
+    if st.session_state["messages"]:
         for message in st.session_state["messages"]:
             if message["role"] == "user":
                 st.write(f"**You:** {message['content']}")
             elif message["role"] == "assistant":
                 st.write(f"**과학탐구 도우미:** {message['content']}")
+    else:
+        st.write("아직 대화 기록이 없습니다.")
 
-    # 다음 버튼: 저장 성공 여부에 따라 페이지 전환
+    # 다음 버튼
     if st.button("다음"):
         if save_to_db():  # 저장 성공 시만 페이지 전환
             st.session_state["step"] = 3

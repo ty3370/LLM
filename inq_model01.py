@@ -239,7 +239,7 @@ def save_feedback_to_db(feedback):
 
 # 페이지 4: 실험 과정 출력
 def page_4():
-    st.title("탐구 도우미의 최종 의견")
+    st.title("실험 과정")
     st.write("실험 과정을 정리 중입니다. 잠시만 기다려주세요.")
 
     if "experiment_plan" not in st.session_state:
@@ -254,12 +254,15 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-        # 대화에 피드백 추가
+        # 피드백을 추가
         st.session_state["messages"].append({"role": "assistant", "content": st.session_state["experiment_plan"]})
 
-        # 대화 내용 저장
+    # 대화와 피드백 저장 (피드백이 추가된 상태에서만 저장)
+    if st.button("저장 및 종료") and "experiment_plan" in st.session_state:
         if save_to_db():  # 기존 save_to_db 함수 재활용
             st.success("대화와 피드백이 성공적으로 저장되었습니다.")
+        else:
+            st.error("저장에 실패했습니다. 다시 시도해주세요.")
 
     # 피드백 출력
     st.write(st.session_state["experiment_plan"])

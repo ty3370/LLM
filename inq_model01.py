@@ -196,6 +196,46 @@ def page_3():
     else:
         st.write("아직 대화 기록이 없습니다.")
 
+# 피드백 저장 함수
+def save_feedback_to_db(feedback):
+    number = st.session_state.get('user_number', '').strip()
+    name = st.session_state.get('user_name', '').strip()
+
+    if not number or not name:  # 학번과 이름 확인
+        st.error("사용자 학번과 이름을 입력해야 합니다.")
+        return False  # 저장 실패
+
+    try:
+        db = pymysql.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_DATABASE"),
+            charset="utf8mb4",  # UTF-8 지원
+            autocommit=True  # 자동 커밋 활성화
+        )
+        cursor = db.cursor()
+        now = datetime.now()
+
+        sql = """
+        INSERT INTO feedback (number, name, feedback, time)
+        VALUES (%s, %s, %s, %s)
+        """
+        val = (number, name, feedback, now)
+
+        # SQL 실행
+        cursor.execute(sql, val)
+        cursor.close()
+        db.close()
+        st.success("피드백이 성공적으로 저장되었습니다.")
+        return True  # 저장 성공
+    except pymysql.MySQLError as db_err:
+        st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
+        return False  # 저장 실패
+    except Exception as e:
+        st.error(f"알 수 없는 오류가 발생했습니다: {e}")
+        return False  # 저장 실패
+
 # 페이지 4: 실험 과정 출력
 def page_4():
     st.title("실험 과정")
@@ -212,6 +252,10 @@ def page_4():
             messages=[{"role": "system", "content": prompt}],
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
+
+        # 저장 로직 추가
+        if save_feedback_to_db(st.session_state["experiment_plan"]):
+            st.success("피드백이 MySQL에 저장되었습니다.")
     
     st.write(st.session_state["experiment_plan"])
 

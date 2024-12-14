@@ -253,10 +253,14 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-        # 저장 로직 추가
-        if save_feedback_to_db(st.session_state["experiment_plan"]):
-            st.success("피드백이 MySQL에 저장되었습니다.")
-    
+        # 대화에 피드백 추가
+        st.session_state["messages"].append({"role": "assistant", "content": st.session_state["experiment_plan"]})
+
+        # 대화 내용 저장
+        if save_to_db():  # 기존 save_to_db 함수 재활용
+            st.success("대화와 피드백이 성공적으로 저장되었습니다.")
+
+    # 피드백 출력
     st.write(st.session_state["experiment_plan"])
 
 # 메인 로직

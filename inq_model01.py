@@ -100,12 +100,12 @@ def page_1():
     st.session_state["user_name"] = st.text_input("이름", value=st.session_state["user_name"])
 
     st.write(" ")  # Add space to position the button at the bottom properly
-if st.button("다음", key=f"next_button_{st.session_state['step']}_unique"):
-    if st.session_state["user_number"].strip() == "" or st.session_state["user_name"].strip() == "":
-        st.error("학번과 이름을 모두 입력해주세요.")
-    else:
-        st.session_state["step"] = 2
-        st.rerun()
+    if st.button("다음", key="page1_next_button"):
+        if st.session_state["user_number"].strip() == "" or st.session_state["user_name"].strip() == "":
+            st.error("학번과 이름을 모두 입력해주세요.")
+        else:
+            st.session_state["step"] = 2
+            st.rerun()
 
 # 페이지 2: 사용법 안내
 def page_2():
@@ -125,7 +125,7 @@ def page_2():
     )
 
     st.write(" ")  # Add space to position the button at the bottom properly
-if st.button("다음", key=f"next_button_{st.session_state['step']}_unique"):
+    if st.button("다음", key="page2_next_button"):
         st.session_state["step"] = 3
         st.rerun()
 
@@ -179,7 +179,7 @@ def page_3():
 
     # 다음 버튼
     st.write(" ")  # Add space to position the button at the bottom properly
-if st.button("다음", key=f"next_button_{st.session_state['step']}_unique"):
+    if st.button("다음", key="page3_next_button"):
         if save_to_db():  # 저장 성공 시만 페이지 전환
             st.session_state["step"] = 4
             st.rerun()

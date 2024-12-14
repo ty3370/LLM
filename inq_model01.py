@@ -100,11 +100,11 @@ def page_1():
     st.session_state["user_name"] = st.text_input("이름", value=st.session_state["user_name"])
 
     if st.button("다음"):
-        if st.session_state["user_number"].strip() == "" or st.session_state["user_name"].strip() == "":
-            st.error("학번과 이름을 모두 입력해주세요.")
-        else:
-            st.session_state["step"] = 2
-            st.rerun()
+    if st.session_state["user_number"].strip() == "" or st.session_state["user_name"].strip() == "":
+        st.error("학번과 이름을 모두 입력해주세요.")
+    else:
+        st.session_state["step"] = 2
+        st.rerun()
 
 # 페이지 2: 사용법 안내
 def page_2():

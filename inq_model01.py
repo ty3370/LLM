@@ -133,8 +133,8 @@ def page_2():
 
 # 페이지 3: GPT와 대화
 def page_3():
-    st.title("탐구 도우미와 대화하기")
-    st.write("탐구 도우미와 대화를 나누며 탐구를 설계하세요.")
+    st.title("탐구 설계 대화")
+    st.write("과학탐구 도우미와 대화를 나누며 탐구를 설계하세요.")
 
     # 학번과 이름 확인
     if not st.session_state.get("user_number") or not st.session_state.get("user_name"):
@@ -179,12 +179,11 @@ def page_3():
     else:
         st.write("아직 최근 대화가 없습니다.")
 
-    # 다음 버튼
+    # 다음 버튼 (저장 로직 제거)
     st.write(" ")  # Add space to position the button at the bottom properly
     if st.button("다음", key="page3_next_button"):
-        if save_to_db():  # 저장 성공 시만 페이지 전환
-            st.session_state["step"] = 4
-            st.rerun()
+        st.session_state["step"] = 4
+        st.rerun()
 
     # 누적 대화 출력
     st.subheader("📜 누적 대화 목록")
@@ -242,13 +241,14 @@ def page_4():
     st.title("실험 과정")
     st.write("실험 과정을 정리 중입니다. 잠시만 기다려주세요.")
 
+    # 피드백 생성 및 대화에 추가
     if "experiment_plan" not in st.session_state:
         # 대화 히스토리 정리
         chat_history = "\n".join(
             f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"]
         )
         prompt = f"다음은 학생과 과학탐구 도우미의 대화 기록입니다:\n{chat_history}\n\n"
-        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백(강점과 개선점 등)."
+        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백."
 
         # OpenAI API 호출
         response = client.chat.completions.create(
@@ -260,14 +260,19 @@ def page_4():
         # 피드백을 대화 히스토리에 추가
         st.session_state["messages"].append({"role": "assistant", "content": st.session_state["experiment_plan"]})
 
-        # 대화와 피드백 저장
+    # 중복 저장 방지: 피드백 저장 여부 확인
+    if "feedback_saved" not in st.session_state:
+        st.session_state["feedback_saved"] = False  # 초기화
+
+    if not st.session_state["feedback_saved"]:
         if save_to_db():  # 기존 save_to_db 함수 재활용
+            st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
             st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
 
     # 피드백 출력
-    st.subheader("📋 탐구 도우미의 제안")
+    st.subheader("📋 생성된 피드백")
     st.write(st.session_state["experiment_plan"])
 
 # 메인 로직

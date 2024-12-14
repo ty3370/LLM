@@ -89,7 +89,7 @@ def get_chatgpt_response(prompt):
 
 # 페이지 1: 학번 및 이름 입력
 def page_1():
-    st.title("보라중학교 과학탐구 도우미 챗봇")
+    st.title("보라중학교 탐구 도우미 챗봇")
     st.write("학번과 이름을 입력한 뒤 '다음' 버튼을 눌러주세요.")
 
     if "user_number" not in st.session_state:
@@ -110,7 +110,7 @@ def page_1():
 
 # 페이지 2: 사용법 안내
 def page_2():
-    st.title("탐구 도우미 인공지능 활용 방법")
+    st.title("탐구 도우미 활용 방법")
     st.write(
         """  
         ※주의! '자동 번역'을 활성화하면 대화가 이상하게 번역되므로 활성화하면 안 돼요. 혹시 이미 '자동 번역' 버튼을 눌렀다면 비활성화 하세요.  
@@ -132,8 +132,8 @@ def page_2():
 
 # 페이지 3: GPT와 대화
 def page_3():
-    st.title("탐구 설계 대화")
-    st.write("과학탐구 도우미와 대화를 나누며 탐구를 설계하세요.")
+    st.title("탐구 도우미와 대화하기")
+    st.write("탐구 도우미와 대화를 나누며 탐구를 설계하세요.")
 
     # 학번과 이름 확인
     if not st.session_state.get("user_number") or not st.session_state.get("user_name"):
@@ -238,7 +238,7 @@ def save_feedback_to_db(feedback):
 
 # 페이지 4: 실험 과정 출력
 def page_4():
-    st.title("실험 과정")
+    st.title("탐구 도우미의 최종 의견")
     st.write("실험 과정을 정리 중입니다. 잠시만 기다려주세요.")
 
     if "experiment_plan" not in st.session_state:

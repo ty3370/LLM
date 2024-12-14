@@ -18,7 +18,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 initial_prompt = (
     "당신은 중학생의 자유 탐구를 돕는 챗봇이며, 이름은 '과학탐구 도우미'입니다."
     "이 탐구는 중학교 1학년 학생들이 하는 탐구이므로, 중학교 1학년 수준에 맞게 설명해야 합니다."
-    "탐구 주제는 '종이, 고무줄, 빨대, 풍선, 책, 페트병, 캔, 종이컵 등 일상에서 쉽게 접할 수 있는 물건들로 할 수 있는 실험'입니다."
+    "탐구 주제는 '종이, 고무줄, 빨대, 풍선, 책, 실, 페트병, 캔, 종이컵 등 일상에서 쉽게 접할 수 있는 물건들로 할 수 있는 실험'입니다."
     "과학 개념을 설명할 때는 14세 정도의 학생 수준으로 간결하게 설명하세요."
     "학생에게는 다음과 같은 절차로 챗봇을 활용하도록 안내되었습니다: ① 먼저 인공지능에게 탐구 주제를 알려주고, 탐구에 대해 궁금한 것을 물어보세요. ② 궁금한 것을 다 물어봤다면, 인공지능에게 '궁금한 건 다 물어봤어'라고 말해주세요. ③ 그러면 인공지능이 당신의 생각을 물어볼 거예요. 당신이 생각한 '실험 가설'과 '실험 방법'을 인공지능에게 알려주세요. ④ 인공지능이 당신의 생각에 대해 추가 질문을 하면, 그것을 고민해 답해보세요. 궁금한 게 있으면 인공지능에게 물어봐도 돼요. ⑤ 충분히 대화가 이루어지면 인공지능이 [다음] 버튼을 눌러도 된다고 알려줘요. 인공지능이 [다음] 버튼을 누르라고 했을 때 버튼을 누르세요!"
     "대화 시작 단계에서 학생이 탐구 주제를 말하지 않는다면, 탐구 주제가 무엇인지 먼저 물어보세요."
@@ -242,15 +242,14 @@ def page_4():
     st.title("실험 과정")
     st.write("실험 과정을 정리 중입니다. 잠시만 기다려주세요.")
 
-    # 피드백 생성 및 대화에 추가
     if "experiment_plan" not in st.session_state:
         # 대화 히스토리 정리
         chat_history = "\n".join(
             f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"]
         )
         prompt = f"다음은 학생과 과학탐구 도우미의 대화 기록입니다:\n{chat_history}\n\n"
-        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백."
-        
+        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백(강점과 개선점 등)."
+
         # OpenAI API 호출
         response = client.chat.completions.create(
             model=MODEL,
@@ -258,19 +257,18 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-        # 피드백을 대화에 추가
+        # 피드백을 대화 히스토리에 추가
         st.session_state["messages"].append({"role": "assistant", "content": st.session_state["experiment_plan"]})
 
-    # 피드백 출력
-    st.subheader("📋 생성된 피드백")
-    st.write(st.session_state["experiment_plan"])
-
-    # 저장 버튼 및 저장 로직
-    if st.button("저장 및 종료"):
-        if save_to_db():  # 기존 함수 재활용
+        # 대화와 피드백 저장
+        if save_to_db():  # 기존 save_to_db 함수 재활용
             st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
+
+    # 피드백 출력
+    st.subheader("📋 탐구 도우미의 제안")
+    st.write(st.session_state["experiment_plan"])
 
 # 메인 로직
 if "step" not in st.session_state:

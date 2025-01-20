@@ -219,8 +219,8 @@ def page_3():
     with col2:
         if st.button("다음"):
             st.session_state["step"] = 4
-            st.session_state.pop("experiment_plan", None)  # 기존 피드백 초기화
-            st.session_state.pop("feedback_saved", None)  # 피드백 저장 여부 초기화
+            del st.session_state["experiment_plan"] if "experiment_plan" in st.session_state else None
+            del st.session_state["feedback_saved"] if "feedback_saved" in st.session_state else None
             st.rerun()
 
 # 피드백 저장 함수
@@ -228,7 +228,7 @@ def save_feedback_to_db(feedback):
     number = st.session_state.get('user_number', '').strip()
     name = st.session_state.get('user_name', '').strip()
 
-    if not number or not name:  # 학번과 이름 확인
+    if not number or not name:
         st.error("사용자 학번과 이름을 입력해야 합니다.")
         return False  # 저장 실패
 
@@ -238,8 +238,8 @@ def save_feedback_to_db(feedback):
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_DATABASE"),
-            charset="utf8mb4",  # UTF-8 지원
-            autocommit=True  # 자동 커밋 활성화
+            charset="utf8mb4",
+            autocommit=True
         )
         cursor = db.cursor()
         now = datetime.now()
@@ -250,11 +250,10 @@ def save_feedback_to_db(feedback):
         """
         val = (number, name, feedback, now)
 
-        # SQL 실행
         cursor.execute(sql, val)
+        db.commit()
         cursor.close()
         db.close()
-        st.success("피드백이 성공적으로 저장되었습니다.")
         return True  # 저장 성공
     except pymysql.MySQLError as db_err:
         st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
@@ -270,7 +269,6 @@ def page_4():
 
     # 피드백 생성 및 대화에 추가
     if "experiment_plan" not in st.session_state:
-        # 대화 히스토리 정리
         chat_history = "\n".join(
             f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"]
         )
@@ -284,19 +282,18 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-    # 피드백을 데이터베이스에 저장 (다시 페이지에 왔을 때 저장 방지)
-    if not st.session_state.get("feedback_saved", False):
+    # 피드백 저장 플래그 초기화 및 데이터베이스 저장
+    if "feedback_saved" not in st.session_state or not st.session_state["feedback_saved"]:
         if save_feedback_to_db(st.session_state["experiment_plan"]):
-            st.session_state["feedback_saved"] = True  # 성공적으로 저장됨
-            st.success("대화와 피드백이 저장되었습니다.")
+            st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
+            st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
 
-    # 피드백 내용 출력
+    # 피드백 출력
     st.subheader("📋 생성된 피드백")
     st.write(st.session_state["experiment_plan"])
 
-    # 뒤로 가기 버튼
     if st.button("뒤로"):
         st.session_state["step"] = 3
         st.rerun()

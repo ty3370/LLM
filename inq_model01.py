@@ -218,11 +218,9 @@ def page_3():
 
     with col2:
         if st.button("다음"):
-            if "experiment_plan" in st.session_state:
-                del st.session_state["experiment_plan"]  # 기존 피드백 초기화
-            if "feedback_saved" in st.session_state:
-                del st.session_state["feedback_saved"]  # 피드백 저장 여부 초기화
-
+            # 피드백 및 저장 상태 초기화
+            st.session_state["experiment_plan"] = None  # 기존 피드백 초기화
+            st.session_state["feedback_saved"] = False  # 저장 상태 리셋
             st.session_state["step"] = 4
             st.rerun()
 
@@ -256,9 +254,6 @@ def save_feedback_to_db(feedback):
         cursor.execute(sql, val)
         db.commit()
 
-        # 디버깅용 로그 출력
-        st.write(f"디버깅: 저장된 데이터 => 학번: {number}, 이름: {name}, 피드백: {feedback[:50]}...")
-
         cursor.close()
         db.close()
         return True  # 저장 성공
@@ -277,7 +272,7 @@ def page_4():
     st.write("탐구 도우미가 대화 내용을 정리 중입니다. 잠시만 기다려주세요.")
 
     # 피드백 생성 및 대화에 추가
-    if "experiment_plan" not in st.session_state:
+    if st.session_state.get("experiment_plan") is None:
         chat_history = "\n".join(
             f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"]
         )
@@ -291,10 +286,10 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-    # 피드백 저장 플래그 초기화 및 데이터베이스 저장
-    if "feedback_saved" not in st.session_state or not st.session_state["feedback_saved"]:
+    # 피드백 저장 확인 후 DB 저장
+    if not st.session_state.get("feedback_saved", False):
         if save_feedback_to_db(st.session_state["experiment_plan"]):
-            st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
+            st.session_state["feedback_saved"] = True
             st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
@@ -303,6 +298,7 @@ def page_4():
     st.subheader("📋 생성된 피드백")
     st.write(st.session_state["experiment_plan"])
 
+    # 뒤로 가기 버튼
     if st.button("뒤로"):
         st.session_state["step"] = 3
         st.rerun()

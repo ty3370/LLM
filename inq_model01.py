@@ -48,9 +48,9 @@ def save_to_db():
     number = st.session_state.get('user_number', '').strip()
     name = st.session_state.get('user_name', '').strip()
 
-    if not number or not name:  # 학번과 이름 확인
+    if not number or not name:
         st.error("사용자 학번과 이름을 입력해야 합니다.")
-        return False  # 저장 실패
+        return False
 
     try:
         db = pymysql.connect(
@@ -58,8 +58,8 @@ def save_to_db():
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_DATABASE"),
-            charset="utf8mb4",  # UTF-8 지원
-            autocommit=True  # 자동 커밋 활성화
+            charset="utf8mb4",
+            autocommit=False  # 자동 커밋 해제
         )
         cursor = db.cursor()
         now = datetime.now()
@@ -68,27 +68,31 @@ def save_to_db():
         INSERT INTO qna (number, name, chat, time)
         VALUES (%s, %s, %s, %s)
         """
-        chat = json.dumps(st.session_state["messages"], ensure_ascii=False)  # 대화 내용을 JSON 문자열로 변환
+        chat = json.dumps(st.session_state.get("messages", []), ensure_ascii=False)
         val = (number, name, chat, now)
 
-        # SQL 실행
         affected_rows = cursor.execute(sql, val)
-        db.commit()
-        cursor.close()
-        db.close()
 
         if affected_rows == 0:
-            st.error("데이터가 저장되지 않았습니다. 다시 시도해 주세요.")
-            return False  # 저장 실패
-        else:
-            st.success("대화 내용이 정상적으로 저장되었습니다.")
-            return True  # 저장 성공
+            raise Exception("쿼리가 실행되었으나 데이터가 삽입되지 않았습니다.")
+
+        db.commit()  # 명시적 커밋
+        st.success("대화 내용이 정상적으로 저장되었습니다.")
+        return True
+
     except pymysql.MySQLError as db_err:
-        st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
-        return False  # 저장 실패
+        db.rollback()  # 오류 발생 시 롤백
+        st.error(f"DB 오류 발생: {db_err}")
+        return False
+
     except Exception as e:
-        st.error(f"알 수 없는 오류가 발생했습니다: {e}")
-        return False  # 저장 실패
+        db.rollback()
+        st.error(f"오류 발생: {e}")
+        return False
+
+    finally:
+        cursor.close()
+        db.close()
 
 # GPT 응답 생성 함수
 def get_chatgpt_response(prompt):

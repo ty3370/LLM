@@ -274,11 +274,11 @@ def page_4():
     st.write(st.session_state["experiment_plan"])
 
     # 뒤로가기 버튼 (페이지 3으로 이동 시 피드백 삭제)
-    if st.button("뒤로", key="page4_back_button"):
-        st.session_state["step"] = 3
-        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
-        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
-        st.rerun()
+#    if st.button("뒤로", key="page4_back_button"):
+#        st.session_state["step"] = 3
+#        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
+#        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
+#        st.rerun()
 
 # 메인 로직
 if "step" not in st.session_state:

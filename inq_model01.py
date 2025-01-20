@@ -255,12 +255,18 @@ def save_feedback_to_db(feedback):
 
         cursor.execute(sql, val)
         db.commit()
+
+        # 디버깅용 로그 출력
+        st.write(f"디버깅: 저장된 데이터 => 학번: {number}, 이름: {name}, 피드백: {feedback[:50]}...")
+
         cursor.close()
         db.close()
         return True  # 저장 성공
+
     except pymysql.MySQLError as db_err:
         st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
         return False  # 저장 실패
+
     except Exception as e:
         st.error(f"알 수 없는 오류가 발생했습니다: {e}")
         return False  # 저장 실패

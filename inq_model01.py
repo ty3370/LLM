@@ -218,9 +218,12 @@ def page_3():
 
     with col2:
         if st.button("다음"):
+            if "experiment_plan" in st.session_state:
+                del st.session_state["experiment_plan"]  # 기존 피드백 초기화
+            if "feedback_saved" in st.session_state:
+                del st.session_state["feedback_saved"]  # 피드백 저장 여부 초기화
+
             st.session_state["step"] = 4
-            del st.session_state["experiment_plan"] if "experiment_plan" in st.session_state else None
-            del st.session_state["feedback_saved"] if "feedback_saved" in st.session_state else None
             st.rerun()
 
 # 피드백 저장 함수

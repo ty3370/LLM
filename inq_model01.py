@@ -289,9 +289,10 @@ def page_4():
     st.subheader("📋 생성된 피드백")
     st.write(st.session_state["experiment_plan"])
 
-    if st.button("뒤로"):
+    if st.button("뒤로", key="page4_back_button"):
         st.session_state["step"] = 3
-        st.session_state["experiment_plan"] = None
+        st.session_state["experiment_plan"] = None  # 기존 피드백 삭제
+        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
         st.rerun()
 
 # 메인 로직

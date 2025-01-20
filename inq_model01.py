@@ -73,6 +73,7 @@ def save_to_db():
 
         # SQL 실행
         cursor.execute(sql, val)
+        db.commit()
         cursor.close()
         db.close()
         st.success("대화 내용 처리 중입니다.")

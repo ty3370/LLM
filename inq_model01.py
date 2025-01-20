@@ -261,6 +261,10 @@ def save_feedback_to_db(feedback):
         """
         val = (number, name, feedback, now)
 
+        # 디버깅: SQL 쿼리와 데이터 출력
+        st.write("실행되는 SQL:", sql)
+        st.write("입력 값:", val)
+
         cursor.execute(sql, val)
 
         # SQL 실행 결과 검증

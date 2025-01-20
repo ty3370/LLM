@@ -213,7 +213,7 @@ def page_3():
         )
 
         st.session_state["experiment_plan"] = response.choices[0].message.content
-        st.session_state["feedback_saved"] = False  # 피드백 저장 플래그 초기화
+#        st.session_state["feedback_saved"] = False  # 피드백 저장 플래그 초기화
 
         # 피드백 즉시 저장
         if save_feedback_to_db(st.session_state["experiment_plan"]):
@@ -283,8 +283,8 @@ def page_4():
     # 뒤로가기 버튼 (페이지 3으로 이동 시 피드백 삭제)
     if st.button("뒤로", key="page4_back_button"):
         st.session_state["step"] = 3
-#        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
-#        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
+        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
+        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
         st.rerun()
 
 # 메인 로직

@@ -11,10 +11,6 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 MODEL = 'gpt-4o'
 
-# 세션 상태 초기화
-if "step" not in st.session_state:
-    st.session_state["step"] = 1
-
 # OpenAI API 설정
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -48,9 +44,9 @@ def save_to_db():
     number = st.session_state.get('user_number', '').strip()
     name = st.session_state.get('user_name', '').strip()
 
-    if not number or not name:
+    if not number or not name:  # 학번과 이름 확인
         st.error("사용자 학번과 이름을 입력해야 합니다.")
-        return False
+        return False  # 저장 실패
 
     try:
         db = pymysql.connect(
@@ -58,8 +54,8 @@ def save_to_db():
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_DATABASE"),
-            charset="utf8mb4",
-            autocommit=False  # 자동 커밋 해제
+            charset="utf8mb4",  # UTF-8 지원
+            autocommit=True  # 자동 커밋 활성화
         )
         cursor = db.cursor()
         now = datetime.now()
@@ -68,31 +64,21 @@ def save_to_db():
         INSERT INTO qna (number, name, chat, time)
         VALUES (%s, %s, %s, %s)
         """
-        chat = json.dumps(st.session_state.get("messages", []), ensure_ascii=False)
+        chat = json.dumps(st.session_state["messages"], ensure_ascii=False)  # 대화 내용을 JSON 문자열로 변환
         val = (number, name, chat, now)
 
-        affected_rows = cursor.execute(sql, val)
-
-        if affected_rows == 0:
-            raise Exception("쿼리가 실행되었으나 데이터가 삽입되지 않았습니다.")
-
-        db.commit()  # 명시적 커밋
-        st.success("대화 내용이 정상적으로 저장되었습니다.")
-        return True
-
-    except pymysql.MySQLError as db_err:
-        db.rollback()  # 오류 발생 시 롤백
-        st.error(f"DB 오류 발생: {db_err}")
-        return False
-
-    except Exception as e:
-        db.rollback()
-        st.error(f"오류 발생: {e}")
-        return False
-
-    finally:
+        # SQL 실행
+        cursor.execute(sql, val)
         cursor.close()
         db.close()
+        st.success("대화 내용 처리 중입니다.")
+        return True  # 저장 성공
+    except pymysql.MySQLError as db_err:
+        st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
+        return False  # 저장 실패
+    except Exception as e:
+        st.error(f"알 수 없는 오류가 발생했습니다: {e}")
+        return False  # 저장 실패
 
 # GPT 응답 생성 함수
 def get_chatgpt_response(prompt):
@@ -146,19 +132,14 @@ def page_2():
         ⑤ 충분히 대화가 이루어지면 인공지능이 [다음] 버튼을 눌러도 된다고 알려줘요. 인공지능이 [다음] 버튼을 누르라고 했을 때 버튼을 누르세요!  
 
         위 내용을 충분히 숙지했다면, 아래의 [다음] 버튼을 눌러 진행해주세요.  
-        """
-    )
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("뒤로"):
-            st.session_state["step"] = 1
-            st.rerun()
-
-    with col2:
-        if st.button("다음"):
-            st.session_state["step"] = 3
-            st.rerun()
+        """)
+    if st.button("다음", key="page2_next_button"):
+        st.session_state["step"] = 3
+        st.rerun()
+    
+    if st.button("뒤로"):
+        st.session_state["step"] = 1
+        st.rerun()
 
 # 페이지 3: GPT와 대화
 def page_3():
@@ -219,27 +200,22 @@ def page_3():
     else:
         st.write("아직 대화 기록이 없습니다.")
 
-    # 버튼 배치 (뒤로 & 다음)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("뒤로"):
-            st.session_state["step"] = 2
-            st.rerun()
-
-    with col2:
-        if st.button("다음"):
-            # 피드백 및 저장 상태 초기화
-            st.session_state["experiment_plan"] = None  # 기존 피드백 초기화
-            st.session_state["feedback_saved"] = False  # 저장 상태 리셋
-            st.session_state["step"] = 4
-            st.rerun()
+    # 다음 버튼 (저장 로직 제거)
+    st.write(" ")  # Add space to position the button at the bottom properly
+    if st.button("다음", key="page3_next_button"):
+        st.session_state["step"] = 4
+        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
+        st.rerun()
+    if st.button("뒤로"):
+        st.session_state["step"] = 2
+        st.rerun()
 
 # 피드백 저장 함수
 def save_feedback_to_db(feedback):
     number = st.session_state.get('user_number', '').strip()
     name = st.session_state.get('user_name', '').strip()
 
-    if not number or not name:
+    if not number or not name:  # 학번과 이름 확인
         st.error("사용자 학번과 이름을 입력해야 합니다.")
         return False  # 저장 실패
 
@@ -249,8 +225,8 @@ def save_feedback_to_db(feedback):
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_DATABASE"),
-            charset="utf8mb4",
-            autocommit=True
+            charset="utf8mb4",  # UTF-8 지원
+            autocommit=True  # 자동 커밋 활성화
         )
         cursor = db.cursor()
         now = datetime.now()
@@ -261,32 +237,18 @@ def save_feedback_to_db(feedback):
         """
         val = (number, name, feedback, now)
 
-        # 디버깅: SQL 쿼리와 데이터 출력
-        st.write("실행되는 SQL:", sql)
-        st.write("입력 값:", val)
-
+        # SQL 실행
         cursor.execute(sql, val)
-        db.commit()
-
-        # SQL 실행 결과 검증
-        if cursor.rowcount == 0:
-            st.error("데이터 삽입 실패: 데이터가 저장되지 않았습니다.")
-            return False
-
-        st.success("대화 내용이 정상적으로 저장되었습니다.")
-        return True
-
-    except pymysql.MySQLError as db_err:
-        st.error(f"DB 오류 발생: {db_err}")
-        return False
-
-    except Exception as e:
-        st.error(f"알 수 없는 오류 발생: {e}")
-        return False
-
-    finally:
         cursor.close()
         db.close()
+        st.success("피드백이 성공적으로 저장되었습니다.")
+        return True  # 저장 성공
+    except pymysql.MySQLError as db_err:
+        st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
+        return False  # 저장 실패
+    except Exception as e:
+        st.error(f"알 수 없는 오류가 발생했습니다: {e}")
+        return False  # 저장 실패
 
 # 페이지 4: 실험 과정 출력
 def page_4():
@@ -294,7 +256,8 @@ def page_4():
     st.write("탐구 도우미가 대화 내용을 정리 중입니다. 잠시만 기다려주세요.")
 
     # 피드백 생성 및 대화에 추가
-    if st.session_state.get("experiment_plan") is None:
+    if "experiment_plan" not in st.session_state:
+        # 대화 히스토리 정리
         chat_history = "\n".join(
             f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"]
         )
@@ -308,10 +271,16 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-    # 피드백 저장 확인 후 DB 저장
-    if not st.session_state.get("feedback_saved", False):
-        if save_feedback_to_db(st.session_state["experiment_plan"]):
-            st.session_state["feedback_saved"] = True
+        # 피드백을 대화 히스토리에 추가
+        st.session_state["messages"].append({"role": "assistant", "content": st.session_state["experiment_plan"]})
+
+    # 중복 저장 방지: 피드백 저장 여부 확인
+    if "feedback_saved" not in st.session_state:
+        st.session_state["feedback_saved"] = False  # 초기화
+
+    if not st.session_state["feedback_saved"]:
+        if save_to_db():  # 기존 save_to_db 함수 재활용
+            st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
             st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
@@ -320,9 +289,9 @@ def page_4():
     st.subheader("📋 생성된 피드백")
     st.write(st.session_state["experiment_plan"])
 
-    # 뒤로 가기 버튼
     if st.button("뒤로"):
         st.session_state["step"] = 3
+        st.session_state["experiment_plan"] = None
         st.rerun()
 
 # 메인 로직

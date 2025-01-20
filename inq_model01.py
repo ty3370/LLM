@@ -243,45 +243,45 @@ def save_feedback_to_db(feedback):
         st.error("사용자 학번과 이름을 입력해야 합니다.")
         return False  # 저장 실패
 
-try:
-    db = pymysql.connect(
-        host=os.getenv("DB_HOST"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_DATABASE"),
-        charset="utf8mb4",
-        autocommit=True
-    )
-    cursor = db.cursor()
-    now = datetime.now()
+    try:
+        db = pymysql.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_DATABASE"),
+            charset="utf8mb4",
+            autocommit=True
+        )
+        cursor = db.cursor()
+        now = datetime.now()
 
-    sql = """
-    INSERT INTO feedback (number, name, feedback, time)
-    VALUES (%s, %s, %s, %s)
-    """
-    val = (number, name, feedback, now)
+        sql = """
+        INSERT INTO feedback (number, name, feedback, time)
+        VALUES (%s, %s, %s, %s)
+        """
+        val = (number, name, feedback, now)
 
-    cursor.execute(sql, val)
+        cursor.execute(sql, val)
 
-    # SQL 실행 결과 검증
-    if cursor.rowcount == 0:
-        st.error("데이터 삽입 실패: 데이터가 저장되지 않았습니다.")
+        # SQL 실행 결과 검증
+        if cursor.rowcount == 0:
+            st.error("데이터 삽입 실패: 데이터가 저장되지 않았습니다.")
+            return False
+
+        st.success("대화 내용이 정상적으로 저장되었습니다.")
+        return True
+
+    except pymysql.MySQLError as db_err:
+        st.error(f"DB 오류 발생: {db_err}")
         return False
 
-    st.success("대화 내용이 정상적으로 저장되었습니다.")
-    return True
+    except Exception as e:
+        st.error(f"알 수 없는 오류 발생: {e}")
+        return False
 
-except pymysql.MySQLError as db_err:
-    st.error(f"DB 오류 발생: {db_err}")
-    return False
-
-except Exception as e:
-    st.error(f"알 수 없는 오류 발생: {e}")
-    return False
-
-finally:
-    cursor.close()
-    db.close()
+    finally:
+        cursor.close()
+        db.close()
 
 # 페이지 4: 실험 과정 출력
 def page_4():

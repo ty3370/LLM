@@ -77,7 +77,6 @@ def save_to_db(all_data):
         cursor.execute(sql, val)
         cursor.close()
         db.close()
-        st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         return True  # 저장 성공
     except pymysql.MySQLError as db_err:
         st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
@@ -304,7 +303,6 @@ def page_4():
         # 새로운 데이터(all_data_to_store)를 MySQL에 저장
         if save_to_db(all_data_to_store):  # 기존 save_to_db 함수에 통합된 데이터 전달
             st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
-            st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
 

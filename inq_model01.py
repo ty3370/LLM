@@ -201,13 +201,28 @@ def page_3():
         st.write("아직 대화 기록이 없습니다.")
 
     # 다음 버튼 (저장 로직 제거)
-    st.write(" ")  # Add space to position the button at the bottom properly
     if st.button("다음", key="page3_next_button"):
+        # 피드백 생성
+        chat_history = "\n".join(f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"])
+        prompt = f"다음은 학생과 과학탐구 도우미의 대화 기록입니다:\n{chat_history}\n\n"
+        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백(강점과 개선점 등), 4. 예상 결과(주제와 관련된 과학적 이론과 실험 오차를 고려해, 실험 과정을 그대로 수행했을 때 나올 실험 결과를 표 등으로 제시해주세요. 이때 결과 관련 설명은 제시하지 말고, 결과만 제시하세요)."
+
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "system", "content": prompt}]
+        )
+
+        st.session_state["experiment_plan"] = response.choices[0].message.content
+        st.session_state["feedback_saved"] = False  # 피드백 저장 플래그 설정
+
+        # 피드백 즉시 저장
+        if save_feedback_to_db(st.session_state["experiment_plan"]):
+            st.session_state["feedback_saved"] = True  # 저장 완료 후 플래그 설정
+            st.success("피드백이 성공적으로 저장되었습니다.")
+        else:
+            st.error("피드백 저장에 실패했습니다.")
+
         st.session_state["step"] = 4
-        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
-        st.rerun()
-    if st.button("뒤로"):
-        st.session_state["step"] = 2
         st.rerun()
 
 # 피드백 저장 함수
@@ -254,25 +269,7 @@ def save_feedback_to_db(feedback):
 def page_4():
     st.title("탐구 도우미의 제안")
 
-    # 페이지 4로 돌아올 때마다 새로운 피드백 생성
-    if not st.session_state.get("feedback_saved", False):
-        chat_history = "\n".join(f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"])
-        prompt = f"다음은 학생과 과학탐구 도우미의 대화 기록입니다:\n{chat_history}\n\n"
-        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백(강점과 개선점 등), 4. 예상 결과(주제와 관련된 과학적 이론과 실험 오차를 고려해, 실험 과정을 그대로 수행했을 때 나올 실험 결과를 표 등으로 제시해주세요. 이때 결과 관련 설명은 제시하지 말고, 결과만 제시하세요)."
-
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "system", "content": prompt}]
-        )
-        st.session_state["experiment_plan"] = response.choices[0].message.content
-
-        # 피드백 저장
-        if save_feedback_to_db(st.session_state["experiment_plan"]):
-            st.session_state["feedback_saved"] = True  # 피드백 저장 완료 플래그 설정
-        else:
-            st.error("피드백 저장에 실패했습니다.")
-
-    # 피드백 출력 (저장된 경우만 출력)
+    # 피드백 출력
     if "experiment_plan" in st.session_state:
         st.subheader("📋 생성된 피드백")
         st.write(st.session_state["experiment_plan"])

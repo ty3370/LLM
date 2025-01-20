@@ -72,12 +72,17 @@ def save_to_db():
         val = (number, name, chat, now)
 
         # SQL 실행
-        cursor.execute(sql, val)
+        affected_rows = cursor.execute(sql, val)
         db.commit()
         cursor.close()
         db.close()
-        st.success("대화 내용 처리 중입니다.")
-        return True  # 저장 성공
+
+        if affected_rows == 0:
+            st.error("데이터가 저장되지 않았습니다. 다시 시도해 주세요.")
+            return False  # 저장 실패
+        else:
+            st.success("대화 내용이 정상적으로 저장되었습니다.")
+            return True  # 저장 성공
     except pymysql.MySQLError as db_err:
         st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
         return False  # 저장 실패

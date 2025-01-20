@@ -40,7 +40,11 @@ initial_prompt = (
 )
 
 # MySQL 저장 함수
-def save_to_db():
+import json
+import pymysql
+from datetime import datetime
+
+def save_to_db(all_data):
     number = st.session_state.get('user_number', '').strip()
     name = st.session_state.get('user_name', '').strip()
 
@@ -64,14 +68,16 @@ def save_to_db():
         INSERT INTO qna (number, name, chat, time)
         VALUES (%s, %s, %s, %s)
         """
-        chat = json.dumps(st.session_state["messages"], ensure_ascii=False)  # 대화 내용을 JSON 문자열로 변환
+        # all_data를 JSON 문자열로 변환하여 저장
+        chat = json.dumps(all_data, ensure_ascii=False)  # 대화 및 피드백 내용 통합
+
         val = (number, name, chat, now)
 
         # SQL 실행
         cursor.execute(sql, val)
         cursor.close()
         db.close()
-        st.success("대화 내용 처리 중입니다.")
+        st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         return True  # 저장 성공
     except pymysql.MySQLError as db_err:
         st.error(f"DB 처리 중 오류가 발생했습니다: {db_err}")
@@ -270,19 +276,23 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-        # 피드백을 대화 히스토리에 추가
-        st.session_state["messages"].append({"role": "assistant", "content": st.session_state["experiment_plan"]})
-
     # 피드백 출력
     st.subheader("📋 생성된 피드백")
     st.write(st.session_state["experiment_plan"])
+
+    # 새로운 변수에 대화 내용과 피드백을 통합
+    if "all_data" not in st.session_state:
+        st.session_state["all_data"] = []
+
+    all_data_to_store = st.session_state["messages"] + [{"role": "assistant", "content": st.session_state["experiment_plan"]}]
 
     # 중복 저장 방지: 피드백 저장 여부 확인
     if "feedback_saved" not in st.session_state:
         st.session_state["feedback_saved"] = False  # 초기화
 
     if not st.session_state["feedback_saved"]:
-        if save_to_db():  # 기존 save_to_db 함수 재활용
+        # 새로운 데이터(all_data_to_store)를 MySQL에 저장
+        if save_to_db(all_data_to_store):  # 기존 save_to_db 함수에 통합된 데이터 전달
             st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
             st.success("대화와 피드백이 성공적으로 저장되었습니다.")
         else:

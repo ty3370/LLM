@@ -219,6 +219,8 @@ def page_3():
     with col2:
         if st.button("다음"):
             st.session_state["step"] = 4
+            st.session_state.pop("experiment_plan", None)  # 기존 피드백 초기화
+            st.session_state.pop("feedback_saved", None)  # 피드백 저장 여부 초기화
             st.rerun()
 
 # 피드백 저장 함수
@@ -282,25 +284,19 @@ def page_4():
         )
         st.session_state["experiment_plan"] = response.choices[0].message.content
 
-        # 피드백을 대화 히스토리에 추가
-        st.session_state["messages"].append({"role": "assistant", "content": st.session_state["experiment_plan"]})
-
-    # 중복 저장 방지: 피드백 저장 여부 확인
-    if "feedback_saved" not in st.session_state:
-        st.session_state["feedback_saved"] = False  # 초기화
-
-    if not st.session_state["feedback_saved"]:
-        if save_to_db():  # 기존 save_to_db 함수 재활용
-            st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
-            st.success("대화와 피드백이 성공적으로 저장되었습니다.")
+    # 피드백을 데이터베이스에 저장 (다시 페이지에 왔을 때 저장 방지)
+    if not st.session_state.get("feedback_saved", False):
+        if save_feedback_to_db(st.session_state["experiment_plan"]):
+            st.session_state["feedback_saved"] = True  # 성공적으로 저장됨
+            st.success("대화와 피드백이 저장되었습니다.")
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
 
-    # 피드백 출력
+    # 피드백 내용 출력
     st.subheader("📋 생성된 피드백")
     st.write(st.session_state["experiment_plan"])
 
-    # 버튼 배치 (뒤로)
+    # 뒤로 가기 버튼
     if st.button("뒤로"):
         st.session_state["step"] = 3
         st.rerun()

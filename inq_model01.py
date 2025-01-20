@@ -139,13 +139,19 @@ def page_2():
 
         위 내용을 충분히 숙지했다면, 아래의 [다음] 버튼을 눌러 진행해주세요.  
         """)
-    if st.button("다음", key="page2_next_button"):
-        st.session_state["step"] = 3
-        st.rerun()
-    
-    if st.button("뒤로"):
-        st.session_state["step"] = 1
-        st.rerun()
+
+    # 버튼
+    col1, col2 = st.columns([1, 1])
+
+    with col1:
+        if st.button("이전"):
+            st.session_state["step"] = 1
+            st.rerun()
+
+    with col2:
+        if st.button("다음", key="page2_next_button"):
+            st.session_state["step"] = 3
+            st.rerun()
 
 # 페이지 3: GPT와 대화
 def page_3():
@@ -206,16 +212,20 @@ def page_3():
     else:
         st.write("아직 대화 기록이 없습니다.")
 
-    # 다음 버튼 (페이지 4로 이동)
-    if st.button("다음", key="page3_next_button"):
-        st.session_state["step"] = 4
-        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
-        st.rerun()
+    col1, col2 = st.columns([1, 1])
 
-    # 뒤로가기 버튼 (페이지 2로 이동)
-    if st.button("뒤로", key="page3_back_button"):
-        st.session_state["step"] = 2
-        st.rerun()
+    # 이전 버튼
+    with col1:
+        if st.button("이전"):
+            st.session_state["step"] = 2
+            st.rerun()
+
+    # 다음 버튼
+    with col2:
+        if st.button("다음", key="page3_next_button"):
+            st.session_state["step"] = 4
+            st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
+            st.rerun()
 
 # 피드백 저장 함수
 def save_feedback_to_db(feedback):
@@ -298,10 +308,9 @@ def page_4():
         else:
             st.error("저장에 실패했습니다. 다시 시도해주세요.")
 
-    # 뒤로가기 버튼 (페이지 3으로 이동 시 피드백 삭제)
-    if st.button("뒤로", key="page4_back_button"):
+    # 이전 버튼 (페이지 3으로 이동 시 피드백 삭제)
+    if st.button("이전", key="page4_back_button"):
         st.session_state["step"] = 3
-        # 피드백 삭제
         if "experiment_plan" in st.session_state:
             del st.session_state["experiment_plan"]  # 피드백 삭제
         st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화

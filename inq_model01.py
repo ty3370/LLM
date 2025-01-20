@@ -178,8 +178,6 @@ def page_3():
         st.session_state["recent_message"] = {"user": user_input, "assistant": assistant_response}
 
         # 사용자 입력을 초기화하고 페이지를 새로고침
-        st.session_state["messages"].append({"role": "user", "content": user_input})
-        st.session_state["messages"].append({"role": "assistant", "content": assistant_response})
         st.session_state["user_input_temp"] = ""
         st.rerun()
 
@@ -205,7 +203,7 @@ def page_3():
     # 다음 버튼 (페이지 4로 이동)
     if st.button("다음", key="page3_next_button"):
         st.session_state["step"] = 4
-#        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
+        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
         st.rerun()
 
     # 뒤로가기 버튼 (페이지 2로 이동)
@@ -278,8 +276,8 @@ def page_4():
     # 뒤로가기 버튼 (페이지 3으로 이동 시 피드백 삭제)
     if st.button("뒤로", key="page4_back_button"):
         st.session_state["step"] = 3
-#        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
-#        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
+        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
+        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
         st.rerun()
 
 # 메인 로직

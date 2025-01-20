@@ -178,6 +178,8 @@ def page_3():
         st.session_state["recent_message"] = {"user": user_input, "assistant": assistant_response}
 
         # 사용자 입력을 초기화하고 페이지를 새로고침
+        st.session_state["messages"].append({"role": "user", "content": user_input})
+        st.session_state["messages"].append({"role": "assistant", "content": assistant_response})
         st.session_state["user_input_temp"] = ""
         st.rerun()
 
@@ -200,30 +202,10 @@ def page_3():
     else:
         st.write("아직 대화 기록이 없습니다.")
 
-    # 다음 버튼 클릭 시 피드백 생성 및 저장
+    # 다음 버튼 (페이지 4로 이동)
     if st.button("다음", key="page3_next_button"):
-        # 대화 히스토리를 기반으로 피드백 생성
-        chat_history = "\n".join(f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"])
-        prompt = f"다음은 학생과 과학탐구 도우미의 대화 기록입니다:\n{chat_history}\n\n"
-        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백(강점과 개선점 등), 4. 예상 결과(주제와 관련된 과학적 이론과 실험 오차를 고려해, 실험 과정을 그대로 수행했을 때 나올 실험 결과를 표 등으로 제시해주세요. 이때 결과 관련 설명은 제시하지 말고, 결과만 제시하세요)."
-
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "system", "content": prompt}]
-        )
-
-        st.session_state["experiment_plan"] = response.choices[0].message.content
-#        st.session_state["feedback_saved"] = False  # 피드백 저장 플래그 초기화
-
-        # 피드백 즉시 저장
-        if save_feedback_to_db(st.session_state["experiment_plan"]):
-            st.session_state["feedback_saved"] = True  # 저장 성공 시 플래그 설정
-            st.success("피드백이 성공적으로 저장되었습니다.")
-        else:
-            st.error("피드백 저장에 실패했습니다.")
-
-        # 4페이지로 이동
         st.session_state["step"] = 4
+#        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
         st.rerun()
 
     # 뒤로가기 버튼 (페이지 2로 이동)
@@ -274,17 +256,30 @@ def save_feedback_to_db(feedback):
 # 페이지 4: 실험 과정 출력
 def page_4():
     st.title("탐구 도우미의 제안")
+    st.write("탐구 도우미가 대화 내용을 정리 중입니다. 잠시만 기다려주세요.")
+
+    # 페이지 4로 돌아올 때마다 새로운 피드백 생성
+    if not st.session_state.get("feedback_saved", False):
+        chat_history = "\n".join(f"{msg['role']}: {msg['content']}" for msg in st.session_state["messages"])
+        prompt = f"다음은 학생과 과학탐구 도우미의 대화 기록입니다:\n{chat_history}\n\n"
+        prompt += "위 대화를 바탕으로, 다음 내용을 포함해 탐구 내용과 피드백을 작성하세요: 1. 대화 내용을 종합해 도출한 탐구 가설 및 과정, 2. 학생이 제시한 탐구 가설 및 과정에서 수정한 부분과 수정한 이유, 3. 학생의 탐구 능력에 관한 피드백(강점과 개선점 등), 4. 예상 결과(주제와 관련된 과학적 이론과 실험 오차를 고려해, 실험 과정을 그대로 수행했을 때 나올 실험 결과를 표 등으로 제시해주세요. 이때 결과 관련 설명은 제시하지 말고, 결과만 제시하세요)."
+
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "system", "content": prompt}]
+        )
+        st.session_state["experiment_plan"] = response.choices[0].message.content
+        st.session_state["feedback_saved"] = True  # 피드백 저장 완료 표시
 
     # 피드백 출력
-    if "experiment_plan" in st.session_state:
-        st.subheader("📋 생성된 피드백")
-        st.write(st.session_state["experiment_plan"])
+    st.subheader("📋 생성된 피드백")
+    st.write(st.session_state["experiment_plan"])
 
     # 뒤로가기 버튼 (페이지 3으로 이동 시 피드백 삭제)
     if st.button("뒤로", key="page4_back_button"):
         st.session_state["step"] = 3
-        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
-        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
+#        st.session_state.pop("experiment_plan", None)  # 피드백 삭제
+#        st.session_state["feedback_saved"] = False  # 피드백 재생성 플래그 초기화
         st.rerun()
 
 # 메인 로직

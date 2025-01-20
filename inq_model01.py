@@ -11,6 +11,10 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 MODEL = 'gpt-4o'
 
+# 세션 상태 초기화
+if "step" not in st.session_state:
+    st.session_state["step"] = 1
+
 # OpenAI API 설정
 client = OpenAI(api_key=OPENAI_API_KEY)
 

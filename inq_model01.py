@@ -40,9 +40,6 @@ initial_prompt = (
 )
 
 # MySQL 저장 함수
-import json
-import pymysql
-from datetime import datetime
 
 def save_to_db(all_data):
     number = st.session_state.get('user_number', '').strip()

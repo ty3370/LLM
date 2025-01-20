@@ -266,6 +266,7 @@ def save_feedback_to_db(feedback):
         st.write("입력 값:", val)
 
         cursor.execute(sql, val)
+        db.commit()
 
         # SQL 실행 결과 검증
         if cursor.rowcount == 0:

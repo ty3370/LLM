@@ -41,7 +41,7 @@ def get_chatgpt_response(prompt):
     return answer
 
 # Streamlit 애플리케이션
-st.title("생기부 작성 챗봇")
+st.title("보라중 과학 도우미")
 
 # 대화 기록 초기화
 if "messages" not in st.session_state:
@@ -55,7 +55,7 @@ with st.form(key='chat_form', clear_on_submit=True):
     if submit_button and user_input:
         # 사용자 입력 저장 및 챗봇 응답 생성
         response = get_chatgpt_response(user_input)
-        st.write(f"**생기부봇:** {response}")
+        st.write(f"**과학 도우미:** {response}")
 
 # 대화 기록 출력
 if "messages" in st.session_state:
@@ -64,4 +64,4 @@ if "messages" in st.session_state:
         if message["role"] == "user":
             st.write(f"**You:** {message['content']}")
         elif message["role"] == "assistant":
-            st.write(f"**생기부봇:** {message['content']}")
+            st.write(f"**과학 도우미:** {message['content']}")
